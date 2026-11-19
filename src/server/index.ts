@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import mongoose from 'mongoose';
 import axios from 'axios';
 import { v2 as cloudinary } from 'cloudinary';
@@ -683,6 +684,22 @@ async function seedInitialData() {
     console.warn('Seeder notice:', seedErr.message);
   }
 }
+
+// Serve compiled client in production (Full-stack single link deployment on Render)
+const distPath = path.resolve(__dirname, '../../dist');
+app.use(express.static(distPath));
+
+// For non-API routes, serve client index.html
+app.get('*', (req: Request, res: Response) => {
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  const indexPath = path.join(distPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    return res.sendFile(indexPath);
+  }
+  res.send('RIT CareerHub AI API is running.');
+});
 
 // Global error handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
