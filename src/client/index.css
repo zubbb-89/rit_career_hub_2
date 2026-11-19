@@ -6,25 +6,31 @@
   --color-primary: #0c2340;
   --color-primary-dark: #071526;
   --color-accent: #b45309;
-  --color-canvas: #fcfcfd;
+  --color-accent-light: #d97706;
+  --color-canvas: #faf8f5; /* Warm off-white paper canvas tone */
   --color-surface: #ffffff;
-  --color-border: #e2e8f0;
-  --color-border-strong: #cbd5e1;
+  --color-border: #e7e5e4;
+  --color-border-hairline: #e2e8f0;
   --color-heading: #0f172a;
   --color-body: #334155;
   --color-muted: #64748b;
   --ease-entrance: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-soft: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 html {
   scroll-behavior: smooth;
+  background-color: var(--color-canvas);
 }
 
+/* Subtle, fine paper grain texture at very low opacity */
 body {
   background-color: var(--color-canvas);
+  background-image: radial-gradient(rgba(12, 35, 64, 0.025) 1px, transparent 0);
+  background-size: 20px 20px;
   color: var(--color-body);
   font-family: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  line-height: 1.625;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -35,7 +41,123 @@ body {
   outline-offset: 2px;
 }
 
-/* Reduced motion accessibility rule - mandatory */
+/* =========================================================================
+   PART 2: LIQUID GLASS EFFECT (STRICTLY FOR NAVBAR & BRIEFING CARD ONLY)
+   ========================================================================= */
+
+/* Institutional Briefing Card: Solid fallback for unsupported browsers */
+.liquid-glass-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 12px -2px rgba(12, 35, 64, 0.04);
+}
+
+/* Liquid Glass enhancements where backdrop-filter is supported */
+@supports (backdrop-filter: blur(14px)) or (-webkit-backdrop-filter: blur(14px)) {
+  .liquid-glass-card {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.95), 0 4px 20px -2px rgba(12, 35, 64, 0.06);
+  }
+}
+
+/* Gentle Specular Sheen (Hover feedback, transform/opacity only, 250ms) */
+.sheen-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.sheen-overlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 15%,
+    rgba(255, 255, 255, 0.35) 45%,
+    transparent 75%
+  );
+  opacity: 0;
+  transform: translateX(-100%);
+  transition: transform 280ms var(--ease-entrance), opacity 280ms ease;
+}
+
+.sheen-container:hover .sheen-overlay {
+  opacity: 0.65;
+  transform: translateX(100%);
+}
+
+/* Liquid Glass for Sticky Navbar */
+.liquid-glass-nav-base {
+  background-color: #0c2340;
+  border-bottom: 1px solid #163861;
+}
+
+@supports (backdrop-filter: blur(14px)) or (-webkit-backdrop-filter: blur(14px)) {
+  .liquid-glass-nav-scrolled {
+    background: rgba(12, 35, 64, 0.86);
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.18), 0 4px 24px -2px rgba(7, 21, 38, 0.35);
+  }
+}
+
+/* =========================================================================
+   PART 3: EVIDENCE-BASED MOTION & VIEW TRANSITIONS
+   ========================================================================= */
+
+/* View Transitions API Animations */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: 160ms ease-in both fadeOut;
+}
+
+::view-transition-new(root) {
+  animation: 250ms var(--ease-entrance) both fadeIn;
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Scroll reveals (triggered once via IntersectionObserver or simple entrance) */
+@media (prefers-reduced-motion: no-preference) {
+  .motion-reveal {
+    animation: entranceFade 320ms var(--ease-entrance) forwards;
+  }
+
+  .motion-stagger-1 { animation-delay: 60ms; }
+  .motion-stagger-2 { animation-delay: 120ms; }
+  .motion-stagger-3 { animation-delay: 180ms; }
+
+  @keyframes entranceFade {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Mandatory accessibility override */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -45,26 +167,31 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  .sheen-overlay {
+    display: none !important;
+  }
 }
 
-/* Evidence-based subtle entrance reveals - strictly GPU accelerated (opacity & transform) */
-@media (prefers-reduced-motion: no-preference) {
-  .motion-reveal {
-    animation: entranceFade 320ms var(--ease-entrance) forwards;
-  }
+/* =========================================================================
+   PART 4: HORIZONTAL SLIDER (USER-CONTROLLED, MOBILE & TABLET ONLY)
+   ========================================================================= */
 
-  .motion-stagger-1 { animation-delay: 50ms; }
-  .motion-stagger-2 { animation-delay: 110ms; }
-  .motion-stagger-3 { animation-delay: 170ms; }
+.slider-snap-track {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
 
-  @keyframes entranceFade {
-    from {
-      opacity: 0;
-      transform: translateY(16px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
+.slider-snap-item {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* Hide scrollbar on mobile while preserving touch track navigation */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

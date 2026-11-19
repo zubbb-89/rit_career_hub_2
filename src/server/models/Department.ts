@@ -2,7 +2,9 @@ import { Schema, model, Document } from 'mongoose';
 
 export interface IDepartment extends Document {
   name: string;
-  code: string; // e.g., CSE, ISE
+  code: string;
+  sections: string[];
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -10,7 +12,9 @@ export interface IDepartment extends Document {
 const DepartmentSchema = new Schema<IDepartment>(
   {
     name: { type: String, required: true },
-    code: { type: String, required: true, unique: true },
+    code: { type: String, required: true, unique: true, uppercase: true },
+    sections: { type: [String], default: ['A', 'B', 'C', 'D'] },
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

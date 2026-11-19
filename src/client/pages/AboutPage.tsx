@@ -4,8 +4,8 @@ const AboutPage: React.FC = () => {
   return (
     <div className="w-full py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="border-b border-slate-200 pb-6 mb-8 motion-reveal">
+        {/* Header with Hairline Rule */}
+        <div className="border-b border-stone-200 pb-6 mb-8 motion-reveal">
           <span className="text-xs font-semibold tracking-wider uppercase text-[#b45309] block mb-1">
             Institutional Mission
           </span>
@@ -26,36 +26,36 @@ const AboutPage: React.FC = () => {
               It provides tools to build professional profiles, showcase achievements, generate AI‑driven career roadmaps, and connect with recruiters and hackathon opportunities.
             </p>
             
-            <div className="mt-6 border-l-2 border-[#0c2340] bg-slate-50 p-4 rounded-r-md">
-              <p className="text-sm text-slate-800 font-medium italic font-serif">
+            <div className="mt-6 border-l-2 border-[#0c2340] bg-white border border-stone-200/80 p-5 rounded-r-md shadow-xs">
+              <p className="text-base text-slate-800 font-medium italic font-serif">
                 "One College. Every Student. A Better Career."
               </p>
-              <span className="text-xs text-slate-500 font-sans block mt-1">
+              <span className="text-xs text-slate-500 font-sans block mt-1.5">
                 Centralizing placement credentials and technical growth for Hassan engineering students.
               </span>
             </div>
           </div>
 
           {/* Contextual Facts Panel */}
-          <div className="lg:col-span-4 bg-white border border-slate-200 rounded-lg p-5 text-xs text-slate-600 space-y-4 motion-reveal motion-stagger-2">
-            <h2 className="font-semibold text-slate-900 uppercase tracking-wider text-[11px] border-b border-slate-100 pb-2">
+          <div className="lg:col-span-4 bg-white border border-stone-200 rounded-lg p-5 text-xs text-slate-600 space-y-4 motion-reveal motion-stagger-2 shadow-xs">
+            <h2 className="font-semibold text-slate-900 uppercase tracking-wider text-[11px] border-b border-stone-100 pb-2">
               Affiliation & Stakeholders
             </h2>
             <div className="space-y-2.5">
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase">College</span>
+                <span className="text-slate-400 block text-[10px] uppercase font-mono">College</span>
                 <span className="font-medium text-slate-800">Rajeev Institute of Technology</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase">Department</span>
+                <span className="text-slate-400 block text-[10px] uppercase font-mono">Department</span>
                 <span className="font-medium text-slate-800">Computer Science & Engineering</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase">Organizing Student Body</span>
+                <span className="text-slate-400 block text-[10px] uppercase font-mono">Organizing Body</span>
                 <span className="font-medium text-slate-800">GDG on Campus – RIT Hassan</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase">Location</span>
+                <span className="text-slate-400 block text-[10px] uppercase font-mono">Location</span>
                 <span className="font-medium text-slate-800">Hassan, Karnataka, India</span>
               </div>
             </div>

@@ -1,17 +1,46 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 const HomePage: React.FC = () => {
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  // Monitor horizontal scroll position on mobile/tablet to update pagination dots (1 / 3)
+  useEffect(() => {
+    const el = sliderRef.current;
+    if (!el) return;
+
+    const handleScroll = () => {
+      const scrollLeft = el.scrollLeft;
+      const itemWidth = el.firstElementChild?.clientWidth || 300;
+      const index = Math.round(scrollLeft / itemWidth);
+      setActiveIndex(Math.min(2, Math.max(0, index)));
+    };
+
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToSlide = (index: number) => {
+    const el = sliderRef.current;
+    if (!el) return;
+    const itemWidth = el.firstElementChild?.clientWidth || 300;
+    el.scrollTo({
+      left: index * (itemWidth + 16),
+      behavior: 'smooth',
+    });
+  };
+
   return (
     <div className="w-full">
-      {/* HERO SECTION — Asymmetric, grounded collegiate layout */}
-      <section className="border-b border-slate-200/90 bg-[#f8fafc] py-14 sm:py-20 px-4 sm:px-6 lg:px-8">
+      {/* HERO SECTION — Grounded collegiate layout with Institutional Briefing Card */}
+      <section className="border-b border-stone-200 bg-[#f9f8f6] py-12 sm:py-18 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             
-            {/* Left Column: Institutional Headline & Value Proposition */}
+            {/* Left Column: Institutional Headline & Proposition */}
             <div className="lg:col-span-7 space-y-6 motion-reveal">
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-sm bg-slate-100 border border-slate-300 text-xs font-semibold tracking-wide uppercase text-[#0c2340]">
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-sm bg-white border border-stone-300 text-xs font-semibold tracking-wider uppercase text-[#0c2340]">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
                 Rajeev Institute of Technology, Hassan
               </div>
@@ -22,7 +51,7 @@ const HomePage: React.FC = () => {
               </h1>
 
               <div className="border-l-2 border-[#b45309] pl-4 py-1">
-                <p className="text-xl sm:text-2xl font-serif text-[#0f172a] font-medium leading-snug">
+                <p className="text-xl sm:text-2xl font-serif text-[#0f172a] font-medium leading-snug tracking-tight">
                   One College. Every Student. A Better Career.
                 </p>
               </div>
@@ -31,7 +60,7 @@ const HomePage: React.FC = () => {
                 A unified engineering career platform connecting student portfolios, AI-verified achievements, placement readiness roadmaps, and hackathon management under one institutional portal.
               </p>
 
-              {/* Action Buttons — Purposeful 150ms states, varied radii */}
+              {/* Action Buttons — Tactile micro-interactions (150ms) */}
               <div className="pt-2 flex flex-wrap items-center gap-3">
                 <Link
                   to="/features"
@@ -41,35 +70,42 @@ const HomePage: React.FC = () => {
                 </Link>
                 <Link
                   to="/about"
-                  className="inline-flex items-center justify-center px-5 py-2.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium border border-slate-300 transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
+                  className="inline-flex items-center justify-center px-5 py-2.5 rounded-md bg-white hover:bg-stone-50 text-slate-700 text-sm font-medium border border-stone-300 transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-stone-400 focus-visible:ring-offset-2"
                 >
                   About the Initiative
                 </Link>
               </div>
             </div>
 
-            {/* Right Column: Grounded Institutional Briefing Card */}
+            {/* Right Column: Liquid Glass Institutional Briefing Card */}
             <div className="lg:col-span-5 motion-reveal motion-stagger-1">
-              <div className="bg-white border border-slate-200 rounded-lg p-6 sm:p-7 shadow-sm space-y-5">
-                <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 font-sans">Institutional Overview</span>
-                  <span className="text-xs font-mono text-[#b45309] font-medium">CODESTORM 2026</span>
+              <div className="liquid-glass-card sheen-container rounded-lg p-6 sm:p-7 space-y-5 transition-shadow duration-300 hover:shadow-md">
+                {/* Specular Sheen Layer (GPU transform/opacity only) */}
+                <div className="sheen-overlay" aria-hidden="true" />
+
+                <div className="border-b border-stone-200/80 pb-3 flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 font-sans">
+                    Institutional Overview
+                  </span>
+                  <span className="text-xs font-mono text-[#b45309] font-medium">
+                    CODESTORM 2026
+                  </span>
                 </div>
 
                 <div className="space-y-3.5 text-sm font-sans">
-                  <div className="flex items-start justify-between py-1 border-b border-slate-50">
+                  <div className="flex items-start justify-between py-1 border-b border-stone-100">
                     <span className="text-slate-500">Institution:</span>
                     <span className="font-medium text-slate-900 text-right">Rajeev Institute of Technology</span>
                   </div>
-                  <div className="flex items-start justify-between py-1 border-b border-slate-50">
+                  <div className="flex items-start justify-between py-1 border-b border-stone-100">
                     <span className="text-slate-500">Department:</span>
                     <span className="font-medium text-slate-900 text-right">Computer Science & Engineering</span>
                   </div>
-                  <div className="flex items-start justify-between py-1 border-b border-slate-50">
+                  <div className="flex items-start justify-between py-1 border-b border-stone-100">
                     <span className="text-slate-500">Lead Club:</span>
                     <span className="font-medium text-slate-900 text-right">GDG on Campus – RIT Hassan</span>
                   </div>
-                  <div className="flex items-start justify-between py-1 border-b border-slate-50">
+                  <div className="flex items-start justify-between py-1 border-b border-stone-100">
                     <span className="text-slate-500">Architecture:</span>
                     <span className="font-mono text-xs text-[#0c2340] bg-slate-100 px-2 py-0.5 rounded-sm">React + Express + MongoDB Atlas</span>
                   </div>
@@ -81,7 +117,7 @@ const HomePage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="pt-2 text-xs text-slate-500 border-t border-slate-100 leading-relaxed font-sans">
+                <div className="pt-2 text-xs text-slate-500 border-t border-stone-100 leading-relaxed font-sans">
                   Designed for engineering undergraduates across all departments to prepare portfolios, verify credentials, and apply for technical opportunities.
                 </div>
               </div>
@@ -91,65 +127,112 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* THREE PILLARS — Asymmetric, human-crafted layout with hairline dividers */}
+      {/* THREE PILLARS — User-controlled horizontal slider on mobile/tablet (<1024px), 3-col grid on desktop */}
       <section className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="mb-10">
-          <span className="text-xs font-semibold tracking-wider uppercase text-[#b45309] block mb-1">
-            Platform Capabilities
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-serif text-[#0c2340] tracking-tight">
-            Engineered for Academic and Career Growth
-          </h2>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
+          <div>
+            <span className="text-xs font-semibold tracking-wider uppercase text-[#b45309] block mb-1">
+              Platform Capabilities
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-serif text-[#0c2340] tracking-tight">
+              Engineered for Academic and Career Growth
+            </h2>
+          </div>
+
+          {/* Slider Controls & Indicator (Visible on Mobile/Tablet, hidden on Desktop) */}
+          <div className="flex items-center gap-3 lg:hidden self-start sm:self-auto">
+            <span className="font-mono text-xs text-slate-500 tracking-wider">
+              0{activeIndex + 1} / 03
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button 
+                onClick={() => scrollToSlide(Math.max(0, activeIndex - 1))}
+                disabled={activeIndex === 0}
+                aria-label="Previous capability slide"
+                className="w-8 h-8 rounded-sm bg-white border border-stone-300 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-stone-50 flex items-center justify-center transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-[#0c2340]"
+              >
+                ←
+              </button>
+              <button 
+                onClick={() => scrollToSlide(Math.min(2, activeIndex + 1))}
+                disabled={activeIndex === 2}
+                aria-label="Next capability slide"
+                className="w-8 h-8 rounded-sm bg-white border border-stone-300 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-stone-50 flex items-center justify-center transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-[#0c2340]"
+              >
+                →
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-          {/* Card 1: Portfolios */}
-          <div className="bg-white border border-slate-200 rounded-lg p-6 hover:border-slate-300 transition-colors duration-150 flex flex-col justify-between">
+        {/* Pillar Items Container: CSS Snap Track on Mobile/Tablet (<1024px), CSS Grid on Desktop */}
+        <div 
+          ref={sliderRef}
+          tabIndex={0}
+          aria-label="Platform capabilities slider"
+          className="slider-snap-track no-scrollbar flex lg:grid lg:grid-cols-3 gap-5 sm:gap-6 overflow-x-auto pb-4 lg:pb-0 touch-pan-x focus-visible:ring-1 focus-visible:ring-stone-300 rounded-lg"
+        >
+          {/* Pillar 01: Portfolios */}
+          <div className="slider-snap-item w-[84vw] sm:w-[68vw] lg:w-auto shrink-0 lg:shrink bg-white border border-stone-200 rounded-lg p-6 sm:p-7 hover:border-stone-300 transition-colors duration-150 flex flex-col justify-between shadow-xs">
             <div>
-              <div className="text-xs font-mono text-slate-400 mb-2">01 / IDENTITY</div>
-              <h3 className="text-lg font-serif font-semibold text-[#0c2340] mb-2">
+              <div className="text-xs font-mono text-stone-400 mb-2">01 / IDENTITY</div>
+              <h3 className="text-lg font-serif font-semibold text-[#0c2340] mb-2 tracking-tight">
                 MyRITfolio Websites
               </h3>
               <p className="text-sm text-slate-600 leading-relaxed font-sans">
                 Every student receives a personal, shareable portfolio showcasing academic records, verified achievements, and live GitHub project repositories.
               </p>
             </div>
-            <div className="pt-4 mt-4 border-t border-slate-100 text-xs font-medium text-[#0c2340]">
+            <div className="pt-4 mt-6 border-t border-stone-100 text-xs font-medium text-[#0c2340]">
               Verified URL Engine →
             </div>
           </div>
 
-          {/* Card 2: AI Intelligence */}
-          <div className="bg-white border border-slate-200 rounded-lg p-6 hover:border-slate-300 transition-colors duration-150 flex flex-col justify-between">
+          {/* Pillar 02: AI Intelligence */}
+          <div className="slider-snap-item w-[84vw] sm:w-[68vw] lg:w-auto shrink-0 lg:shrink bg-white border border-stone-200 rounded-lg p-6 sm:p-7 hover:border-stone-300 transition-colors duration-150 flex flex-col justify-between shadow-xs">
             <div>
-              <div className="text-xs font-mono text-slate-400 mb-2">02 / READINESS</div>
-              <h3 className="text-lg font-serif font-semibold text-[#0c2340] mb-2">
+              <div className="text-xs font-mono text-stone-400 mb-2">02 / READINESS</div>
+              <h3 className="text-lg font-serif font-semibold text-[#0c2340] mb-2 tracking-tight">
                 AI Career Gap Analysis
               </h3>
               <p className="text-sm text-slate-600 leading-relaxed font-sans">
                 Powered by Gemini API to evaluate target job roles against student profiles, identifying missing technical skills and building 30-60-90 day roadmaps.
               </p>
             </div>
-            <div className="pt-4 mt-4 border-t border-slate-100 text-xs font-medium text-[#0c2340]">
+            <div className="pt-4 mt-6 border-t border-stone-100 text-xs font-medium text-[#0c2340]">
               Personalized Roadmaps →
             </div>
           </div>
 
-          {/* Card 3: Events & Verification */}
-          <div className="bg-white border border-slate-200 rounded-lg p-6 hover:border-slate-300 transition-colors duration-150 flex flex-col justify-between">
+          {/* Pillar 03: Events & Verification */}
+          <div className="slider-snap-item w-[84vw] sm:w-[68vw] lg:w-auto shrink-0 lg:shrink bg-white border border-stone-200 rounded-lg p-6 sm:p-7 hover:border-stone-300 transition-colors duration-150 flex flex-col justify-between shadow-xs">
             <div>
-              <div className="text-xs font-mono text-slate-400 mb-2">03 / VERIFICATION</div>
-              <h3 className="text-lg font-serif font-semibold text-[#0c2340] mb-2">
+              <div className="text-xs font-mono text-stone-400 mb-2">03 / VERIFICATION</div>
+              <h3 className="text-lg font-serif font-semibold text-[#0c2340] mb-2 tracking-tight">
                 Hackathons & UTR Ledger
               </h3>
               <p className="text-sm text-slate-600 leading-relaxed font-sans">
                 Integrated event registrations for CODESTORM 2026 with instant PhonePe QR payment submission and dual-stage administrator ledger approval.
               </p>
             </div>
-            <div className="pt-4 mt-4 border-t border-slate-100 text-xs font-medium text-[#0c2340]">
+            <div className="pt-4 mt-6 border-t border-stone-100 text-xs font-medium text-[#0c2340]">
               Instant Ledger Audit →
             </div>
           </div>
+        </div>
+
+        {/* Mobile Pagination Dots Indicator */}
+        <div className="flex lg:hidden items-center justify-center gap-2 mt-4" aria-hidden="true">
+          {[0, 1, 2].map((i) => (
+            <button
+              key={i}
+              onClick={() => scrollToSlide(i)}
+              className={`h-1.5 rounded-full transition-all duration-200 ${
+                activeIndex === i ? 'w-6 bg-[#0c2340]' : 'w-1.5 bg-stone-300'
+              }`}
+              aria-label={`Jump to capability 0${i + 1}`}
+            />
+          ))}
         </div>
       </section>
     </div>

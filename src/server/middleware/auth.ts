@@ -1,52 +1,61 @@
 import { Request, Response, NextFunction } from 'express';
-import admin from 'firebase-admin';
+import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import path from 'path';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-// Initialize Firebase Admin SDK
-if (!admin.apps.length) {
-  const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT || '';
-  admin.initializeApp({
-    credential: admin.credential.cert(require(serviceAccountPath)),
-  });
+const JWT_SECRET = process.env.JWT_SECRET || 'rit_careerhub_secret_key_2026_supersecure';
+
+export interface AuthUserPayload {
+  id: string;
+  email: string;
+  role: 'admin' | 'student' | 'recruiter';
+  name: string;
+}
+
+export interface AuthenticatedRequest extends Request {
+  user?: AuthUserPayload;
 }
 
 /**
- * Middleware to verify Firebase ID token and attach decoded token to request.
- * Expects `Authorization: Bearer <idToken>` header.
+ * Sign a JWT token with standard 7-day expiration
  */
-export const verifyFirebaseToken = async (req: Request, res: Response, next: NextFunction) => {
+export function signAuthToken(payload: AuthUserPayload): string {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+}
+
+/**
+ * Middleware to verify JWT authentication token
+ */
+export const requireAuth = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Missing or malformed Authorization header' });
+    return res.status(401).json({ error: 'Authentication required. Please log in.' });
   }
-  const idToken = authHeader.split('Bearer ')[1];
+
+  const token = authHeader.split('Bearer ')[1].trim();
   try {
-    const decoded = await admin.auth().verifyIdToken(idToken);
-    // Attach user info to request for later use
-    (req as any).user = decoded;
+    const decoded = jwt.verify(token, JWT_SECRET) as AuthUserPayload;
+    req.user = decoded;
     next();
-  } catch (error) {
-    console.error('Firebase token verification error:', error);
-    res.status(401).json({ error: 'Invalid Firebase ID token' });
+  } catch (err) {
+    return res.status(401).json({ error: 'Session expired or invalid token. Please log in again.' });
   }
 };
 
 /**
- * Role‑based access control middleware.
- * Usage: `authorizeRoles('admin')` or `authorizeRoles('student', 'recruiter')`.
+ * Role-based access control middleware
  */
-export const authorizeRoles = (...allowedRoles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const user = (req as any).user;
-    if (!user) {
-      return res.status(401).json({ error: 'User not authenticated' });
+export const requireRole = (...allowedRoles: Array<'admin' | 'student' | 'recruiter'>) => {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
     }
-    const role = (user as any).role || 'student'; // default role if not set
-    if (!allowedRoles.includes(role)) {
-      return res.status(403).json({ error: `Access denied for role '${role}'` });
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        error: `Access denied. Role '${req.user.role}' is not authorized for this resource.`,
+      });
     }
     next();
   };

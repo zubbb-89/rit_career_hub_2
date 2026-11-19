@@ -16,7 +16,7 @@ const FeaturesPage: React.FC = () => {
     <div className="w-full py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="border-b border-slate-200 pb-6 mb-8 motion-reveal">
+        <div className="border-b border-stone-200 pb-6 mb-8 motion-reveal">
           <span className="text-xs font-semibold tracking-wider uppercase text-[#b45309] block mb-1">
             System Modules
           </span>
@@ -29,18 +29,18 @@ const FeaturesPage: React.FC = () => {
         </div>
 
         {/* Structured Feature Index with Hairline Dividers */}
-        <div className="divide-y divide-slate-200 border-y border-slate-200 bg-white rounded-lg shadow-xs overflow-hidden motion-reveal motion-stagger-1">
+        <div className="divide-y divide-stone-200 border-y border-stone-200 bg-white rounded-lg shadow-xs overflow-hidden motion-reveal motion-stagger-1">
           {features.map((item) => (
             <div 
               key={item.id} 
-              className="py-4 px-5 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/80 transition-colors duration-150"
+              className="py-4 px-5 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-stone-50/70 transition-colors duration-150"
             >
               <div className="flex items-baseline gap-4">
-                <span className="font-mono text-xs font-semibold text-slate-400 select-none">
+                <span className="font-mono text-xs font-semibold text-stone-400 select-none">
                   {item.id}
                 </span>
                 <div>
-                  <h2 className="text-base font-semibold text-slate-900 font-sans">
+                  <h2 className="text-base font-semibold text-slate-900 font-sans tracking-tight">
                     {item.title}
                   </h2>
                   <p className="text-xs text-slate-500 mt-0.5 font-sans leading-relaxed">
@@ -48,7 +48,7 @@ const FeaturesPage: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <span className="self-start sm:self-center font-mono text-[11px] font-medium text-[#0c2340] bg-slate-100 px-2 py-0.5 rounded-xs border border-slate-200 whitespace-nowrap">
+              <span className="self-start sm:self-center font-mono text-[11px] font-medium text-[#0c2340] bg-stone-100 px-2.5 py-0.5 rounded-xs border border-stone-200 whitespace-nowrap">
                 {item.category}
               </span>
             </div>
