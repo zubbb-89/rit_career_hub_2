@@ -231,7 +231,7 @@ app.get('/api/auth/me', requireAuth, async (req: AuthenticatedRequest, res: Resp
 
 app.get('/api/student/profile', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    let profile = await StudentProfile.findOne({ user: req.user?.id });
+    const profile = await StudentProfile.findOne({ user: req.user?.id });
     if (!profile) {
       return res.status(404).json({ error: 'Profile not found' });
     }

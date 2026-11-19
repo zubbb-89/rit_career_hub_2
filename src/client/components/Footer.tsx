@@ -1,7 +1,4 @@
 import React from 'react';
-import collegeLogo from '/assets/college_logo.png';
-import cseLogo from '/assets/cse_logo.jpg';
-import gdgLogo from '/assets/gdg_logo.jpg';
 
 const Footer: React.FC = () => {
   return (
@@ -10,19 +7,19 @@ const Footer: React.FC = () => {
         {/* Institutional Logos with exact sequence */}
         <div className="flex items-center space-x-3">
           <img 
-            src={collegeLogo} 
+            src="/assets/college_logo.png" 
             alt="RIT College Logo" 
             className="h-8 w-8 object-contain bg-white rounded-xs p-0.5 border border-slate-700" 
             title="Rajeev Institute of Technology, Hassan"
           />
           <img 
-            src={cseLogo} 
+            src="/assets/cse_logo.jpg" 
             alt="CSE Department Logo" 
             className="h-8 w-8 object-contain bg-white rounded-xs p-0.5 border border-slate-700" 
             title="Department of Computer Science & Engineering"
           />
           <img 
-            src={gdgLogo} 
+            src="/assets/gdg_logo.jpg" 
             alt="GDG on Campus Logo" 
             className="h-8 w-8 object-contain bg-white rounded-full p-0.5 border border-slate-700" 
             title="GDG on Campus – RIT Hassan"
