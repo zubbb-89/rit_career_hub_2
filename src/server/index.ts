@@ -40,8 +40,14 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Serve static assets (official logos, PhonePe QR image, uploads)
-app.use('/assets', express.static(path.join(__dirname, '../../public/assets')));
+// Serve static assets (compiled Vite CSS/JS, official logos, PhonePe QR image)
+const distPath = path.resolve(__dirname, '../../dist');
+const distAssetsPath = path.join(distPath, 'assets');
+const publicAssetsPath = path.resolve(__dirname, '../../public/assets');
+
+app.use('/assets', express.static(distAssetsPath));
+app.use('/assets', express.static(publicAssetsPath));
+app.use(express.static(distPath));
 
 // Connect to MongoDB Atlas
 mongoose.connect(MONGODB_URI)
@@ -685,11 +691,7 @@ async function seedInitialData() {
   }
 }
 
-// Serve compiled client in production (Full-stack single link deployment on Render)
-const distPath = path.resolve(__dirname, '../../dist');
-app.use(express.static(distPath));
-
-// For non-API routes, serve client index.html
+// For non-API routes, serve client index.html (SPA client-side routing)
 app.get('*', (req: Request, res: Response) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'API endpoint not found' });
