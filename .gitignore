@@ -1,0 +1,18 @@
+node_modules/\n.env\n.env.local\ndist/\nbuild/\n.vscode/\n.idea/\n.DS_Store\n# Logs\nnpm-debug.log*\nyarn-debug.log*\nyarn-error.log*\nlogs/\n*.log\n
+node_modules/
+dist/
+build/
+.next/
+*.log
+
+node_modules/
+dist/
+build/
+.next/
+.env
+*.log
+
+.env
+*.env
+firebase-service-account.json
+*service-account*.json
