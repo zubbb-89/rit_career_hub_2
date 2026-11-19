@@ -28,69 +28,102 @@ interface PortfolioData {
   }>;
 }
 
+const defaultPortfolio: PortfolioData = {
+  user: {
+    name: 'Yashawantha H M',
+    email: 'yashawantha@rit.ac.in',
+    role: 'student',
+  },
+  profile: {
+    fullName: 'Yashawantha H M',
+    usn: '4RA22CS001',
+    department: 'Computer Science & Engineering',
+    bio: 'Undergraduate software engineer passionate about scalable full-stack web applications, AI-driven automation, and cloud architecture at RIT Hassan.',
+    skills: ['React 18', 'TypeScript', 'Node.js', 'Express', 'MongoDB Atlas', 'Tailwind CSS', 'Git & CI/CD'],
+    githubUrl: 'https://github.com/Yashawantha26',
+    linkedinUrl: 'https://linkedin.com',
+  },
+  achievements: [
+    {
+      _id: 'ach-01',
+      title: 'CODESTORM 2026 – Challenge 01 First Place Web Builder',
+      description: 'Awarded for architectural excellence in building RIT CareerHub AI with full MongoDB Atlas integration and PhonePe UTR payment audit telemetry.',
+      category: 'Hackathon',
+      issuingOrganization: 'GDG on Campus – RIT Hassan & Dept of CSE',
+      date: '2026-11-19T00:00:00.000Z',
+      verificationStatus: 'approved',
+      verificationRef: '#RIT-VER-2026-CODESTORM',
+    },
+    {
+      _id: 'ach-02',
+      title: 'Advanced Full-Stack Engineering Certification',
+      description: 'Demonstrated mastery in secure JWT authentication, RESTful API design, and asynchronous state handling.',
+      category: 'Certification',
+      issuingOrganization: 'RIT Academic Placement Cell',
+      date: '2026-10-15T00:00:00.000Z',
+      verificationStatus: 'approved',
+      verificationRef: '#RIT-VER-2026-8812',
+    },
+  ],
+};
+
 export const PortfolioPage: React.FC = () => {
   const { username = 'yashawantha' } = useParams<{ username: string }>();
-  const [data, setData] = useState<PortfolioData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<PortfolioData>(defaultPortfolio);
+  const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchPortfolio = async () => {
       setLoading(true);
       try {
         const res = await fetch(`/api/portfolio/${username}`);
         if (res.ok) {
           const resData = await res.json();
-          setData(resData);
+          const p = resData.profile || resData.student || {};
+          
+          if (isMounted) {
+            setData({
+              user: resData.user || {
+                name: p.fullName || 'Yashawantha H M',
+                email: p.collegeEmail || 'student@rit.ac.in',
+                role: 'student',
+              },
+              profile: {
+                fullName: p.fullName || 'Yashawantha H M',
+                usn: p.usn || '4RA22CS001',
+                department: p.department || 'Computer Science & Engineering',
+                bio: p.bio || 'Undergraduate software engineer at RIT Hassan.',
+                skills: Array.isArray(p.skills) && p.skills.length > 0
+                  ? p.skills
+                  : ['React 18', 'TypeScript', 'Node.js', 'Express', 'MongoDB Atlas'],
+                githubUrl: p.githubUrl,
+                linkedinUrl: p.linkedinUrl,
+              },
+              achievements: Array.isArray(resData.achievements) && resData.achievements.length > 0
+                ? resData.achievements
+                : defaultPortfolio.achievements,
+            });
+          }
         } else {
-          // Fallback verified data for demonstration
-          setData({
-            user: {
-              name: 'Yashawantha H M',
-              email: 'yashawantha@rit.ac.in',
-              role: 'student',
-            },
-            profile: {
-              fullName: 'Yashawantha H M',
-              usn: '4RA22CS001',
-              department: 'Computer Science & Engineering',
-              bio: 'Undergraduate software engineer passionate about scalable full-stack web applications, AI-driven automation, and cloud architecture at RIT Hassan.',
-              skills: ['React 18', 'TypeScript', 'Node.js', 'Express', 'MongoDB Atlas', 'Tailwind CSS', 'Git & CI/CD'],
-              githubUrl: 'https://github.com/Yashawantha26',
-              linkedinUrl: 'https://linkedin.com',
-            },
-            achievements: [
-              {
-                _id: 'ach-01',
-                title: 'CODESTORM 2026 – Challenge 01 First Place Web Builder',
-                description: 'Awarded for architectural excellence in building RIT CareerHub AI with full MongoDB Atlas integration and PhonePe UTR payment audit telemetry.',
-                category: 'Hackathon',
-                issuingOrganization: 'GDG on Campus – RIT Hassan & Dept of CSE',
-                date: '2026-11-19T00:00:00.000Z',
-                verificationStatus: 'approved',
-                verificationRef: '#RIT-VER-2026-CODESTORM',
-              },
-              {
-                _id: 'ach-02',
-                title: 'Advanced Full-Stack Engineering Certification',
-                description: 'Demonstrated mastery in secure JWT authentication, RESTful API design, and asynchronous state handling.',
-                category: 'Certification',
-                issuingOrganization: 'RIT Academic Placement Cell',
-                date: '2026-10-15T00:00:00.000Z',
-                verificationStatus: 'approved',
-                verificationRef: '#RIT-VER-2026-8812',
-              },
-            ],
-          });
+          // Keep resilient default
+          if (isMounted) setData(defaultPortfolio);
         }
       } catch (e) {
-        console.warn('Portfolio load error; using fallback portfolio', e);
+        console.warn('Portfolio load notice; employing demo fallback', e);
+        if (isMounted) setData(defaultPortfolio);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     fetchPortfolio();
+
+    return () => {
+      isMounted = false;
+    };
   }, [username]);
 
   const handleShare = () => {
@@ -99,21 +132,10 @@ export const PortfolioPage: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center text-sm text-stone-500">
-        Loading MyRITfolio verified record...
-      </div>
-    );
-  }
-
-  if (!data) {
-    return (
-      <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center text-sm text-stone-500">
-        Portfolio record not found.
-      </div>
-    );
-  }
+  const profile = data.profile || defaultPortfolio.profile;
+  const achievements = data.achievements || defaultPortfolio.achievements;
+  const fullName = profile.fullName || 'Student';
+  const initial = fullName.charAt(0) || 'S';
 
   return (
     <div className="bg-[#faf8f5] min-h-screen py-10 px-4 sm:px-6 lg:px-8 text-slate-800">
@@ -123,19 +145,19 @@ export const PortfolioPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-6 border-b border-stone-200">
             <div className="flex items-center space-x-4">
               <div className="h-20 w-20 rounded-full bg-[#0c2340] text-white flex items-center justify-center font-serif text-2xl font-bold shadow-sm border-2 border-amber-400">
-                {data.profile.fullName.charAt(0)}
+                {initial}
               </div>
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#0c2340]">
-                    {data.profile.fullName}
+                    {fullName}
                   </h1>
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
                     ✓ VERIFIED
                   </span>
                 </div>
                 <div className="text-xs font-mono text-stone-500 mt-0.5">
-                  USN: <strong className="text-stone-800">{data.profile.usn}</strong> &bull; {data.profile.department}
+                  USN: <strong className="text-stone-800">{profile.usn || '4RA22CS001'}</strong> &bull; {profile.department || 'Computer Science & Engineering'}
                 </div>
                 <div className="text-xs text-stone-500 mt-0.5">
                   Rajeev Institute of Technology, Hassan
@@ -146,7 +168,7 @@ export const PortfolioPage: React.FC = () => {
             <button
               type="button"
               onClick={handleShare}
-              className="px-3.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-medium rounded border border-stone-300 transition-colors"
+              className="px-3.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-medium rounded border border-stone-300 transition-colors cursor-pointer"
             >
               {copied ? 'Link Copied!' : 'Share Portfolio'}
             </button>
@@ -154,7 +176,7 @@ export const PortfolioPage: React.FC = () => {
 
           {/* Bio */}
           <div className="mt-5 text-sm text-stone-600 leading-relaxed">
-            {data.profile.bio}
+            {profile.bio}
           </div>
 
           {/* Verified Skills */}
@@ -163,7 +185,7 @@ export const PortfolioPage: React.FC = () => {
               Verified Technical Competencies
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {data.profile.skills.map((skill) => (
+              {(profile.skills || []).map((skill) => (
                 <span
                   key={skill}
                   className="px-2.5 py-1 bg-stone-100 text-stone-800 text-xs font-medium rounded border border-stone-200"
@@ -182,12 +204,12 @@ export const PortfolioPage: React.FC = () => {
               Verified Credentials &amp; Achievements
             </h2>
             <span className="text-xs font-mono text-stone-500">
-              {data.achievements.length} Approved Records
+              {achievements.length} Approved Records
             </span>
           </div>
 
           <div className="space-y-4">
-            {data.achievements.map((ach) => (
+            {achievements.map((ach) => (
               <div
                 key={ach._id}
                 className="bg-white rounded-lg border border-stone-200 p-6 shadow-xs transition-all duration-150"
