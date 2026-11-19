@@ -1,46 +1,97 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 
 const Navbar: React.FC = () => {
   return (
-    <nav className="bg-[#0f172a] border-b border-slate-800 text-white px-6 py-3 flex items-center justify-between" aria-label="Main navigation">
-      <div className="flex items-center space-x-3">
-        {/* 1. College Logo (Leftmost) */}
-        <img 
-          src="/assets/college_logo.png" 
-          alt="RIT College Logo" 
-          className="h-9 w-9 object-contain bg-white rounded-lg p-0.5 shadow-sm" 
-          title="Rajeev Institute of Technology"
-        />
-
-        {/* 2. Department Logo (Right after College Logo) */}
-        <img 
-          src="/assets/cse_logo.jpg" 
-          alt="CSE Dept Logo" 
-          className="h-9 w-9 object-contain bg-white rounded-lg p-0.5 shadow-sm" 
-          title="Dept. of Computer Science & Engineering"
-        />
-        
-        {/* 3. Title Text + 4. Club Logo (Right beside the text) */}
-        <div className="flex items-center space-x-2 pl-1">
-          <span className="font-bold text-xl tracking-tight text-white">
-            RIT CareerHub <span className="text-violet-400 font-extrabold">AI</span>
-          </span>
+    <nav 
+      className="sticky top-0 z-50 bg-[#0c2340] bg-[#0c2340]/90 backdrop-blur-[12px] border-b border-[#1b3a61] text-white transition-colors duration-150" 
+      aria-label="Main institutional navigation"
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+        {/* Left Brand Area */}
+        <div className="flex items-center space-x-3">
+          {/* 1. College Logo (Far-left) */}
           <img 
-            src="/assets/gdg_logo.jpg" 
-            alt="GDG on Campus Club Logo" 
-            className="h-7 w-7 object-contain bg-white rounded-full p-0.5 shadow-sm" 
-            title="GDG on Campus – RIT Hassan"
+            src="/assets/college_logo.png" 
+            alt="RIT College Crest" 
+            className="h-8 w-8 object-contain bg-white rounded-sm p-0.5 shadow-sm border border-slate-300" 
+            title="Rajeev Institute of Technology, Hassan"
           />
-        </div>
-      </div>
 
-      <ul className="flex items-center space-x-6 text-sm font-medium text-slate-300">
-        <li><Link to="/" className="hover:text-violet-400 transition-colors">Home</Link></li>
-        <li><Link to="/about" className="hover:text-violet-400 transition-colors">About</Link></li>
-        <li><Link to="/features" className="hover:text-violet-400 transition-colors">Features</Link></li>
-        <li><Link to="/contact" className="hover:text-violet-400 transition-colors">Contact</Link></li>
-      </ul>
+          {/* 2. Department Logo (Right after College Logo) */}
+          <img 
+            src="/assets/cse_logo.jpg" 
+            alt="CSE Department Crest" 
+            className="h-8 w-8 object-contain bg-white rounded-sm p-0.5 shadow-sm border border-slate-300" 
+            title="Dept. of Computer Science & Engineering"
+          />
+          
+          {/* 3. Title Text + 4. Club Logo (Beside text) */}
+          <div className="flex items-center space-x-2 pl-1">
+            <span className="font-semibold text-lg tracking-tight text-white font-sans">
+              RIT CareerHub <span className="font-bold text-amber-400">AI</span>
+            </span>
+            <img 
+              src="/assets/gdg_logo.jpg" 
+              alt="GDG on Campus Club Emblem" 
+              className="h-6 w-6 object-contain bg-white rounded-full p-0.5 shadow-sm border border-slate-300" 
+              title="GDG on Campus – RIT Hassan"
+            />
+          </div>
+        </div>
+
+        {/* Navigation Links */}
+        <ul className="flex items-center space-x-1 sm:space-x-6 text-sm font-medium">
+          <li>
+            <NavLink 
+              to="/" 
+              className={({ isActive }) => 
+                `px-2.5 py-1.5 rounded-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0c2340] ${
+                  isActive ? 'text-amber-400 font-semibold' : 'text-slate-200 hover:text-white'
+                }`
+              }
+            >
+              Home
+            </NavLink>
+          </li>
+          <li>
+            <NavLink 
+              to="/about" 
+              className={({ isActive }) => 
+                `px-2.5 py-1.5 rounded-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0c2340] ${
+                  isActive ? 'text-amber-400 font-semibold' : 'text-slate-200 hover:text-white'
+                }`
+              }
+            >
+              About
+            </NavLink>
+          </li>
+          <li>
+            <NavLink 
+              to="/features" 
+              className={({ isActive }) => 
+                `px-2.5 py-1.5 rounded-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0c2340] ${
+                  isActive ? 'text-amber-400 font-semibold' : 'text-slate-200 hover:text-white'
+                }`
+              }
+            >
+              Features
+            </NavLink>
+          </li>
+          <li>
+            <NavLink 
+              to="/contact" 
+              className={({ isActive }) => 
+                `px-2.5 py-1.5 rounded-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0c2340] ${
+                  isActive ? 'text-amber-400 font-semibold' : 'text-slate-200 hover:text-white'
+                }`
+              }
+            >
+              Contact
+            </NavLink>
+          </li>
+        </ul>
+      </div>
     </nav>
   );
 };
