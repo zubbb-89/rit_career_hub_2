@@ -5,16 +5,24 @@ const Navbar: React.FC = () => {
   return (
     <nav className="bg-[#0f172a] border-b border-slate-800 text-white px-6 py-3 flex items-center justify-between" aria-label="Main navigation">
       <div className="flex items-center space-x-3">
-        {/* College Logo */}
+        {/* 1. College Logo (Leftmost) */}
         <img 
           src="/assets/college_logo.png" 
           alt="RIT College Logo" 
           className="h-9 w-9 object-contain bg-white rounded-lg p-0.5 shadow-sm" 
           title="Rajeev Institute of Technology"
         />
+
+        {/* 2. Department Logo (Right after College Logo) */}
+        <img 
+          src="/assets/cse_logo.jpg" 
+          alt="CSE Dept Logo" 
+          className="h-9 w-9 object-contain bg-white rounded-lg p-0.5 shadow-sm" 
+          title="Dept. of Computer Science & Engineering"
+        />
         
-        {/* Brand Text + Club Logo beside text */}
-        <div className="flex items-center space-x-2">
+        {/* 3. Title Text + 4. Club Logo (Right beside the text) */}
+        <div className="flex items-center space-x-2 pl-1">
           <span className="font-bold text-xl tracking-tight text-white">
             RIT CareerHub <span className="text-violet-400 font-extrabold">AI</span>
           </span>
@@ -25,14 +33,6 @@ const Navbar: React.FC = () => {
             title="GDG on Campus – RIT Hassan"
           />
         </div>
-
-        {/* Department Logo */}
-        <img 
-          src="/assets/cse_logo.jpg" 
-          alt="CSE Dept Logo" 
-          className="h-8 w-8 object-contain bg-white rounded-lg p-0.5 shadow-sm hidden sm:block" 
-          title="Dept. of Computer Science & Engineering"
-        />
       </div>
 
       <ul className="flex items-center space-x-6 text-sm font-medium text-slate-300">
