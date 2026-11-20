@@ -10,6 +10,10 @@ export interface IPaymentTransaction extends Document {
   usn: string;
   department: string;
   section: string;
+  teamName?: string;
+  teamSize?: string;
+  year?: string;
+  studentEmail?: string;
   amount: number;
   paymentMethod: string;
   paymentStatus: 'pending' | 'verified' | 'failed' | 'rejected';
@@ -32,6 +36,10 @@ const PaymentTransactionSchema = new Schema<IPaymentTransaction>(
     usn: { type: String, required: true, uppercase: true, trim: true },
     department: { type: String, required: true },
     section: { type: String, default: 'A' },
+    teamName: { type: String, default: 'Solo Entry' },
+    teamSize: { type: String, default: 'Solo Hacker' },
+    year: { type: String, default: '3rd Year' },
+    studentEmail: { type: String },
     amount: { type: Number, required: true, default: 1.00 },
     paymentMethod: { type: String, default: 'PhonePe UPI QR' },
     paymentStatus: {

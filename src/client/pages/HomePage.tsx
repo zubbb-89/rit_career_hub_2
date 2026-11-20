@@ -173,52 +173,64 @@ const HomePage: React.FC = () => {
           className="slider-snap-track no-scrollbar flex lg:grid lg:grid-cols-3 gap-5 sm:gap-6 overflow-x-auto pb-4 lg:pb-0 touch-pan-x focus-visible:ring-1 focus-visible:ring-stone-300 rounded-lg"
         >
           {/* Pillar 01: Portfolios */}
-          <div className="slider-snap-item w-[84vw] sm:w-[68vw] lg:w-auto shrink-0 lg:shrink bg-white border border-stone-200 rounded-lg p-6 sm:p-7 hover:border-stone-300 transition-colors duration-150 flex flex-col justify-between shadow-xs">
+          <Link
+            to="/portfolio/yashawantha"
+            className="slider-snap-item w-[84vw] sm:w-[68vw] lg:w-auto shrink-0 lg:shrink bg-white border border-stone-200 rounded-lg p-6 sm:p-7 hover:border-[#b45309] hover:shadow-md transition-all duration-150 flex flex-col justify-between shadow-xs group cursor-pointer"
+          >
             <div>
-              <div className="text-xs font-mono text-stone-400 mb-2">01 / IDENTITY</div>
-              <h3 className="text-lg font-serif font-semibold text-[#0c2340] mb-2 tracking-tight">
+              <div className="text-xs font-mono text-stone-400 group-hover:text-[#b45309] transition-colors mb-2">01 / IDENTITY</div>
+              <h3 className="text-lg font-serif font-semibold text-[#0c2340] group-hover:text-[#b45309] mb-2 tracking-tight transition-colors">
                 MyRITfolio Websites
               </h3>
               <p className="text-sm text-slate-600 leading-relaxed font-sans">
                 Every student receives a personal, shareable portfolio showcasing academic records, verified achievements, and live GitHub project repositories.
               </p>
             </div>
-            <div className="pt-4 mt-6 border-t border-stone-100 text-xs font-medium text-[#0c2340]">
-              Verified URL Engine →
+            <div className="pt-4 mt-6 border-t border-stone-100 text-xs font-semibold text-[#0c2340] group-hover:text-[#b45309] flex items-center justify-between transition-colors">
+              <span>Explore MyRITfolio</span>
+              <span className="transform group-hover:translate-x-1 transition-transform">&rarr;</span>
             </div>
-          </div>
+          </Link>
 
           {/* Pillar 02: AI Intelligence */}
-          <div className="slider-snap-item w-[84vw] sm:w-[68vw] lg:w-auto shrink-0 lg:shrink bg-white border border-stone-200 rounded-lg p-6 sm:p-7 hover:border-stone-300 transition-colors duration-150 flex flex-col justify-between shadow-xs">
+          <Link
+            to="/ai-tools"
+            className="slider-snap-item w-[84vw] sm:w-[68vw] lg:w-auto shrink-0 lg:shrink bg-white border border-stone-200 rounded-lg p-6 sm:p-7 hover:border-[#b45309] hover:shadow-md transition-all duration-150 flex flex-col justify-between shadow-xs group cursor-pointer"
+          >
             <div>
-              <div className="text-xs font-mono text-stone-400 mb-2">02 / READINESS</div>
-              <h3 className="text-lg font-serif font-semibold text-[#0c2340] mb-2 tracking-tight">
+              <div className="text-xs font-mono text-stone-400 group-hover:text-[#b45309] transition-colors mb-2">02 / READINESS</div>
+              <h3 className="text-lg font-serif font-semibold text-[#0c2340] group-hover:text-[#b45309] mb-2 tracking-tight transition-colors">
                 AI Career Gap Analysis
               </h3>
               <p className="text-sm text-slate-600 leading-relaxed font-sans">
                 Powered by Gemini API to evaluate target job roles against student profiles, identifying missing technical skills and building 30-60-90 day roadmaps.
               </p>
             </div>
-            <div className="pt-4 mt-6 border-t border-stone-100 text-xs font-medium text-[#0c2340]">
-              Personalized Roadmaps →
+            <div className="pt-4 mt-6 border-t border-stone-100 text-xs font-semibold text-[#0c2340] group-hover:text-[#b45309] flex items-center justify-between transition-colors">
+              <span>Launch AI Analyzer</span>
+              <span className="transform group-hover:translate-x-1 transition-transform">&rarr;</span>
             </div>
-          </div>
+          </Link>
 
           {/* Pillar 03: Events & Verification */}
-          <div className="slider-snap-item w-[84vw] sm:w-[68vw] lg:w-auto shrink-0 lg:shrink bg-white border border-stone-200 rounded-lg p-6 sm:p-7 hover:border-stone-300 transition-colors duration-150 flex flex-col justify-between shadow-xs">
+          <Link
+            to="/events"
+            className="slider-snap-item w-[84vw] sm:w-[68vw] lg:w-auto shrink-0 lg:shrink bg-white border border-stone-200 rounded-lg p-6 sm:p-7 hover:border-[#b45309] hover:shadow-md transition-all duration-150 flex flex-col justify-between shadow-xs group cursor-pointer"
+          >
             <div>
-              <div className="text-xs font-mono text-stone-400 mb-2">03 / VERIFICATION</div>
-              <h3 className="text-lg font-serif font-semibold text-[#0c2340] mb-2 tracking-tight">
+              <div className="text-xs font-mono text-stone-400 group-hover:text-[#b45309] transition-colors mb-2">03 / VERIFICATION</div>
+              <h3 className="text-lg font-serif font-semibold text-[#0c2340] group-hover:text-[#b45309] mb-2 tracking-tight transition-colors">
                 Hackathons & UTR Ledger
               </h3>
               <p className="text-sm text-slate-600 leading-relaxed font-sans">
                 Integrated event registrations for CODESTORM 2026 with instant PhonePe QR payment submission and dual-stage administrator ledger approval.
               </p>
             </div>
-            <div className="pt-4 mt-6 border-t border-stone-100 text-xs font-medium text-[#0c2340]">
-              Instant Ledger Audit →
+            <div className="pt-4 mt-6 border-t border-stone-100 text-xs font-semibold text-[#0c2340] group-hover:text-[#b45309] flex items-center justify-between transition-colors">
+              <span>Register & Pay UTR</span>
+              <span className="transform group-hover:translate-x-1 transition-transform">&rarr;</span>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Mobile Pagination Dots Indicator */}

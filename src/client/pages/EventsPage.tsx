@@ -44,16 +44,26 @@ export const EventsPage: React.FC = () => {
     setSubmissionStatus(null);
 
     try {
-      // 1. Submit Payment UTR to Backend
+      // 1. Submit Registration & Payment UTR to Backend
       const payRes = await fetch('/api/payments/submit-utr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          studentUsn: formData.usn.toUpperCase(),
-          studentName: formData.fullName,
-          studentEmail: formData.email,
-          eventTitle: 'CODESTORM 2026 – Challenge 01 (Website Building)',
+          transactionId: formData.utrNumber.trim(),
           utrNumber: formData.utrNumber.trim(),
+          registrationId: `REG-2026-CS01-${Math.floor(100 + Math.random() * 900)}`,
+          fullName: formData.fullName,
+          studentName: formData.fullName,
+          usn: formData.usn.toUpperCase().trim(),
+          studentUsn: formData.usn.toUpperCase().trim(),
+          email: formData.email,
+          studentEmail: formData.email,
+          department: formData.department,
+          year: formData.year,
+          teamName: formData.teamName || 'Solo Entry',
+          teamSize: formData.teamSize,
+          eventTitle: 'CODESTORM 2026 – Challenge 01 (Website Building)',
+          eventName: 'CODESTORM 2026 – Challenge 01 (Website Building)',
           amount: 1,
           paymentMethod: 'PhonePe UPI QR',
         }),
