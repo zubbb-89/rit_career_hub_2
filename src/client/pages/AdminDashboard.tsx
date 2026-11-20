@@ -87,9 +87,11 @@ export const AdminDashboard: React.FC = () => {
   const fetchTransactions = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token') || 'demo-jwt-admin-token-2026';
-      const res = await fetch('/api/admin/transactions', {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await fetch(`/api/admin/transactions?_t=${Date.now()}`, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+        },
       });
       if (res.ok) {
         const data = await res.json();
@@ -107,9 +109,11 @@ export const AdminDashboard: React.FC = () => {
   const fetchCertificates = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token') || 'demo-jwt-admin-token-2026';
-      const res = await fetch('/api/admin/certificates', {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await fetch(`/api/admin/certificates?_t=${Date.now()}`, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+        },
       });
       if (res.ok) {
         const data = await res.json();
@@ -127,7 +131,7 @@ export const AdminDashboard: React.FC = () => {
     fetchTransactions();
     fetchCertificates();
 
-    // Listen for real-time certificate submissions across tabs
+    // Listen for real-time certificate and payment submissions across tabs
     const handleSync = () => {
       fetchCertificates();
       fetchTransactions();
@@ -135,9 +139,10 @@ export const AdminDashboard: React.FC = () => {
     };
 
     window.addEventListener('rit_certificate_uploaded', handleSync);
+    window.addEventListener('rit_transaction_submitted', handleSync);
     window.addEventListener('storage', handleSync);
 
-    // Live polling interval so newly uploaded certificates immediately appear
+    // Live polling interval so newly uploaded certificates and registrations immediately appear
     const interval = setInterval(() => {
       fetchCertificates();
       fetchTransactions();
@@ -145,6 +150,7 @@ export const AdminDashboard: React.FC = () => {
 
     return () => {
       window.removeEventListener('rit_certificate_uploaded', handleSync);
+      window.removeEventListener('rit_transaction_submitted', handleSync);
       window.removeEventListener('storage', handleSync);
       clearInterval(interval);
     };
@@ -231,12 +237,14 @@ export const AdminDashboard: React.FC = () => {
     const regId = t.registrationId || '';
     const team = t.teamName || '';
 
+    const query = searchQuery.toLowerCase().trim();
     const matchesSearch =
-      usn.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      utr.includes(searchQuery) ||
-      regId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      team.toLowerCase().includes(searchQuery.toLowerCase());
+      !query ||
+      usn.toLowerCase().includes(query) ||
+      name.toLowerCase().includes(query) ||
+      utr.toLowerCase().includes(query) ||
+      regId.toLowerCase().includes(query) ||
+      team.toLowerCase().includes(query);
 
     const status = (t.paymentStatus || t.verificationStatus || 'pending').toUpperCase();
     const matchesStatus = filterStatus === 'ALL' || status === filterStatus;
@@ -320,14 +328,32 @@ export const AdminDashboard: React.FC = () => {
           <div className="mt-6 bg-white rounded-lg border border-stone-200 p-6 shadow-xs">
             {/* Filter & Search Bar */}
             <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6">
-              <div className="relative flex-1 max-w-md">
-                <input
-                  type="text"
-                  placeholder="Search by USN, Name, Team, UTR, or Ref ID..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-stone-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#0c2340]"
-                />
+              <div className="flex items-center gap-2 flex-1 max-w-lg">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    placeholder="Search by USN, Name, Team, or UTR (e.g. 123456789122)..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-stone-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-[#0c2340]"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2 top-2 text-stone-400 hover:text-stone-700 text-xs font-bold"
+                    >
+                      &times;
+                    </button>
+                  )}
+                </div>
+                <button
+                  onClick={fetchTransactions}
+                  disabled={loading}
+                  className="px-3 py-2 bg-[#0c2340] hover:bg-[#15345d] text-white text-xs font-semibold rounded-sm transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0 shadow-2xs"
+                >
+                  <span className={loading ? 'animate-spin' : ''}>↻</span>
+                  <span>Refresh Ledger ({transactions.length})</span>
+                </button>
               </div>
 
               <div className="flex items-center gap-2 text-xs">

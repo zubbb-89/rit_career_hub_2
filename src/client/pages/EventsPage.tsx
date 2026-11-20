@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export const EventsPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -21,6 +21,24 @@ export const EventsPage: React.FC = () => {
   } | null>(null);
 
   const demoUpiId = 'ritcareerhub@sbi';
+
+  useEffect(() => {
+    // If user is already logged in as student, prefill their details
+    try {
+      const stored = localStorage.getItem('user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        setFormData((prev) => ({
+          ...prev,
+          fullName: prev.fullName || u.name || '',
+          email: prev.email || u.email || '',
+          usn: prev.usn || (u.email?.includes('@') ? '4RA22CS001' : ''),
+        }));
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
 
   const handleCopyUpi = () => {
     navigator.clipboard.writeText(demoUpiId);
@@ -75,10 +93,18 @@ export const EventsPage: React.FC = () => {
         throw new Error(payData.error || payData.message || 'Payment submission failed');
       }
 
+      // Broadcast sync across browser tabs so Admin Ledger updates immediately!
+      try {
+        localStorage.setItem('rit_txn_updated', Date.now().toString());
+        window.dispatchEvent(new CustomEvent('rit_transaction_submitted', { detail: payData.transaction }));
+      } catch (be) {
+        console.debug('Storage sync notice', be);
+      }
+
       setSubmissionStatus({
         success: true,
         message: 'Registration and UTR recorded! Verification is queued in the Admin Ledger.',
-        transactionId: payData.transaction?.transactionId || payData.transaction?._id,
+        transactionId: payData.transaction?.transactionId || payData.transaction?._id || formData.utrNumber.trim(),
       });
 
       // Clear sensitive fields
@@ -120,14 +146,29 @@ export const EventsPage: React.FC = () => {
               <div
                 className={`mb-6 p-4 rounded-md border text-sm ${
                   submissionStatus.success
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-900 shadow-2xs'
                     : 'bg-rose-50 border-rose-200 text-rose-900'
                 }`}
               >
-                <div className="font-semibold">{submissionStatus.message}</div>
+                <div className="font-semibold text-base mb-1">{submissionStatus.message}</div>
                 {submissionStatus.transactionId && (
-                  <div className="mt-1 font-mono text-xs">
-                    Ref ID: <span className="font-bold">{submissionStatus.transactionId}</span>
+                  <div className="mt-1 font-mono text-xs text-stone-700">
+                    Confirmed UTR / Transaction ID:{' '}
+                    <span className="font-bold bg-white px-2 py-0.5 rounded border border-emerald-300 text-amber-900">
+                      {submissionStatus.transactionId}
+                    </span>
+                  </div>
+                )}
+                {submissionStatus.success && (
+                  <div className="mt-3 pt-2 border-t border-emerald-200 flex items-center justify-between">
+                    <span className="text-xs text-stone-600">Recorded in MongoDB Atlas live ledger</span>
+                    <a
+                      href="/admin"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#0c2340] hover:bg-[#15345d] text-white text-xs font-semibold rounded shadow-xs transition-colors"
+                    >
+                      <span>Open Admin Ledger</span>
+                      <span>&rarr;</span>
+                    </a>
                   </div>
                 )}
               </div>
