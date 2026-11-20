@@ -10,6 +10,8 @@ export interface IAchievement extends Document {
   issuingOrganization: string;
   date: Date;
   fileUrl: string;
+  fileType?: 'pdf' | 'image';
+  fileName?: string;
   verificationStatus: 'pending' | 'approved' | 'rejected' | 'correction_required';
   approvedBy?: string;
   approvalDate?: Date;
@@ -34,6 +36,8 @@ const AchievementSchema = new Schema<IAchievement>(
     issuingOrganization: { type: String, required: true },
     date: { type: Date, default: Date.now },
     fileUrl: { type: String, required: true },
+    fileType: { type: String, enum: ['pdf', 'image'], default: 'image' },
+    fileName: { type: String },
     verificationStatus: {
       type: String,
       enum: ['pending', 'approved', 'rejected', 'correction_required'],

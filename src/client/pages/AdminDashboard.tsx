@@ -29,6 +29,8 @@ interface Certificate {
   category: string;
   issuingOrganization: string;
   fileUrl?: string;
+  fileType?: 'pdf' | 'image';
+  fileName?: string;
   verificationStatus: 'pending' | 'approved' | 'rejected';
   verificationRef?: string;
   createdAt: string;
@@ -124,6 +126,28 @@ export const AdminDashboard: React.FC = () => {
     fetchStats();
     fetchTransactions();
     fetchCertificates();
+
+    // Listen for real-time certificate submissions across tabs
+    const handleSync = () => {
+      fetchCertificates();
+      fetchTransactions();
+      fetchStats();
+    };
+
+    window.addEventListener('rit_certificate_uploaded', handleSync);
+    window.addEventListener('storage', handleSync);
+
+    // Live polling interval so newly uploaded certificates immediately appear
+    const interval = setInterval(() => {
+      fetchCertificates();
+      fetchTransactions();
+    }, 4000);
+
+    return () => {
+      window.removeEventListener('rit_certificate_uploaded', handleSync);
+      window.removeEventListener('storage', handleSync);
+      clearInterval(interval);
+    };
   }, []);
 
   const handleVerifyTransaction = async (id: string, status: 'VERIFIED' | 'REJECTED') => {
@@ -151,6 +175,22 @@ export const AdminDashboard: React.FC = () => {
 
   const handleVerifyCertificate = async (id: string, status: 'approved' | 'rejected') => {
     try {
+      // Optimistically update the UI immediately
+      setCertificates((prev) =>
+        prev.map((c) =>
+          c._id === id
+            ? {
+                ...c,
+                verificationStatus: status,
+                verificationRef:
+                  status === 'approved'
+                    ? `#RIT-VER-2026-${Math.floor(1000 + Math.random() * 9000)}`
+                    : undefined,
+              }
+            : c
+        )
+      );
+
       const token = localStorage.getItem('token') || 'demo-jwt-admin-token-2026';
       const res = await fetch(`/api/admin/certificates/${id}/verify`, {
         method: 'PUT',
@@ -162,8 +202,20 @@ export const AdminDashboard: React.FC = () => {
       });
 
       if (res.ok) {
-        setActionMessage(`Certificate ${status === 'approved' ? 'Approved & Official Badge Issued' : 'Rejected'}`);
-        setTimeout(() => setActionMessage(null), 3000);
+        setActionMessage(
+          status === 'approved'
+            ? '✓ Certificate Approved: Official Institutional Badge Issued to Student'
+            : '✕ Certificate Rejected: Status updated in institutional ledger'
+        );
+        setTimeout(() => setActionMessage(null), 3500);
+
+        try {
+          localStorage.setItem('rit_cert_updated', Date.now().toString());
+          window.dispatchEvent(new CustomEvent('rit_certificate_updated', { detail: { id, status } }));
+        } catch (be) {
+          console.debug('Storage sync notice', be);
+        }
+
         fetchCertificates();
         fetchStats();
       }
@@ -390,23 +442,39 @@ export const AdminDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 2: CERTIFICATE VERIFICATION WITH PICTURE PREVIEW */}
+        {/* TAB 2: CERTIFICATE VERIFICATION WITH PICTURE & PDF PREVIEW */}
         {activeTab === 'certificates' && (
           <div className="mt-6 bg-white rounded-lg border border-stone-200 p-6 shadow-xs">
-            <h2 className="text-lg font-serif font-bold text-[#0c2340] mb-4">
-              Institutional Credential Approvals (Student Certificates)
-            </h2>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-lg font-serif font-bold text-[#0c2340]">
+                  Institutional Credential Approvals (Student Certificates)
+                </h2>
+                <p className="text-xs text-stone-500">
+                  Review student uploaded PDF documents and pictures. Approve to issue official cryptographic credentials or reject.
+                </p>
+              </div>
+              <button
+                onClick={fetchCertificates}
+                disabled={loading}
+                className="px-3.5 py-1.5 bg-[#0c2340] hover:bg-[#15345d] text-white text-xs font-semibold rounded transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 self-start sm:self-auto shadow-2xs"
+              >
+                <span className={loading ? 'animate-spin' : ''}>↻</span>
+                <span>Refresh Certificates ({certificates.length})</span>
+              </button>
+            </div>
+
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs text-stone-700 border-collapse">
                 <thead>
                   <tr className="bg-stone-50 border-y border-stone-200 font-semibold text-stone-900 uppercase tracking-wider">
-                    <th className="py-3 px-3">Certificate Picture</th>
+                    <th className="py-3 px-3">Certificate File</th>
                     <th className="py-3 px-3">Student / USN</th>
                     <th className="py-3 px-3">Achievement Title</th>
                     <th className="py-3 px-3">Issuing Body</th>
                     <th className="py-3 px-3">Status</th>
                     <th className="py-3 px-3">Verification Badge</th>
-                    <th className="py-3 px-3 text-right">Action</th>
+                    <th className="py-3 px-3 text-right">Administrative Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100">
@@ -417,72 +485,107 @@ export const AdminDashboard: React.FC = () => {
                       </td>
                     </tr>
                   ) : (
-                    certificates.map((cert) => (
-                      <tr key={cert._id} className="hover:bg-stone-50/60 transition-colors">
-                        <td className="py-3 px-3">
-                          {cert.fileUrl ? (
-                            <div
-                              onClick={() => setViewingCertImage(cert.fileUrl || null)}
-                              className="w-16 h-12 bg-stone-100 border border-stone-300 rounded overflow-hidden cursor-pointer hover:border-amber-500 transition-colors group relative"
-                              title="Click to view full certificate"
+                    certificates.map((cert) => {
+                      const isPdf =
+                        cert.fileType === 'pdf' ||
+                        cert.fileUrl?.startsWith('data:application/pdf') ||
+                        cert.fileUrl?.toLowerCase().endsWith('.pdf');
+
+                      return (
+                        <tr key={cert._id} className="hover:bg-stone-50/60 transition-colors">
+                          <td className="py-3 px-3">
+                            {cert.fileUrl ? (
+                              isPdf ? (
+                                <div
+                                  onClick={() => setViewingCertImage(cert.fileUrl || null)}
+                                  className="w-16 h-12 bg-red-50 border border-red-300 rounded overflow-hidden cursor-pointer hover:border-red-600 transition-colors group relative flex flex-col items-center justify-center p-1 text-center"
+                                  title="Click to view full PDF document"
+                                >
+                                  <span className="bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.2 rounded shadow-2xs">
+                                    PDF
+                                  </span>
+                                  <span className="text-[8px] text-red-800 font-medium truncate max-w-[56px] mt-0.5">
+                                    {cert.fileName || 'Doc.pdf'}
+                                  </span>
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[9px] font-bold transition-opacity">
+                                    📄 View
+                                  </div>
+                                </div>
+                              ) : (
+                                <div
+                                  onClick={() => setViewingCertImage(cert.fileUrl || null)}
+                                  className="w-16 h-12 bg-stone-100 border border-stone-300 rounded overflow-hidden cursor-pointer hover:border-amber-500 transition-colors group relative"
+                                  title="Click to view full certificate picture"
+                                >
+                                  <img src={cert.fileUrl} alt="Certificate" className="w-full h-full object-cover" />
+                                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[9px] font-bold transition-opacity">
+                                    🔍 View
+                                  </div>
+                                </div>
+                              )
+                            ) : (
+                              <span className="text-stone-400 text-[11px] italic">No document</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="font-semibold text-stone-900">{cert.studentName}</div>
+                            <div className="font-mono text-stone-500 text-[11px]">{cert.usn}</div>
+                          </td>
+                          <td className="py-3 px-3 font-medium text-stone-900">{cert.title}</td>
+                          <td className="py-3 px-3 text-stone-600">{cert.issuingOrganization}</td>
+                          <td className="py-3 px-3">
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold ${
+                                cert.verificationStatus === 'approved'
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                  : cert.verificationStatus === 'rejected'
+                                  ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                                  : 'bg-amber-100 text-amber-800 border border-amber-300'
+                              }`}
                             >
-                              <img src={cert.fileUrl} alt="Certificate" className="w-full h-full object-cover" />
-                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[9px] font-bold transition-opacity">
-                                🔍 View
-                              </div>
-                            </div>
-                          ) : (
-                            <span className="text-stone-400 text-[11px] italic">No image</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-3">
-                          <div className="font-semibold text-stone-900">{cert.studentName}</div>
-                          <div className="font-mono text-stone-500 text-[11px]">{cert.usn}</div>
-                        </td>
-                        <td className="py-3 px-3 font-medium text-stone-900">{cert.title}</td>
-                        <td className="py-3 px-3 text-stone-600">{cert.issuingOrganization}</td>
-                        <td className="py-3 px-3">
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold ${
-                              cert.verificationStatus === 'approved'
-                                ? 'bg-emerald-100 text-emerald-800'
+                              {cert.verificationStatus === 'approved'
+                                ? 'Approved'
                                 : cert.verificationStatus === 'rejected'
-                                ? 'bg-rose-100 text-rose-800'
-                                : 'bg-amber-100 text-amber-800'
-                            }`}
-                          >
-                            {cert.verificationStatus}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3">
-                          {cert.verificationStatus === 'approved' ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-300">
-                              ✓ APPROVED BY RIT CAREERHUB ADMIN
+                                ? 'Rejected'
+                                : 'Pending'}
                             </span>
-                          ) : (
-                            <span className="text-stone-400 text-[11px]">Unverified</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-3 text-right space-x-1">
-                          {cert.verificationStatus === 'pending' && (
-                            <>
-                              <button
-                                onClick={() => handleVerifyCertificate(cert._id, 'approved')}
-                                className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded text-[11px] font-medium cursor-pointer"
-                              >
-                                Approve &amp; Issue Badge
-                              </button>
-                              <button
-                                onClick={() => handleVerifyCertificate(cert._id, 'rejected')}
-                                className="px-2 py-1 bg-stone-200 hover:bg-rose-100 text-stone-700 rounded text-[11px] cursor-pointer"
-                              >
-                                Reject
-                              </button>
-                            </>
-                          )}
-                        </td>
-                      </tr>
-                    ))
+                          </td>
+                          <td className="py-3 px-3">
+                            {cert.verificationStatus === 'approved' ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-300">
+                                ✓ APPROVED BY RIT CAREERHUB ADMIN
+                              </span>
+                            ) : cert.verificationStatus === 'rejected' ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 px-2 py-1 rounded border border-rose-300">
+                                ✕ REJECTED BY ADMIN
+                              </span>
+                            ) : (
+                              <span className="text-amber-700 font-mono text-[11px]">⏳ Needs Audit</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {cert.verificationStatus !== 'approved' && (
+                                <button
+                                  onClick={() => handleVerifyCertificate(cert._id, 'approved')}
+                                  className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded text-[11px] font-medium cursor-pointer transition-colors shadow-2xs"
+                                >
+                                  ✓ Approve
+                                </button>
+                              )}
+                              {cert.verificationStatus !== 'rejected' && (
+                                <button
+                                  onClick={() => handleVerifyCertificate(cert._id, 'rejected')}
+                                  className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-800 rounded text-[11px] font-medium cursor-pointer transition-colors"
+                                >
+                                  ✕ Reject
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -574,27 +677,62 @@ export const AdminDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* LIGHTBOX MODAL FOR CERTIFICATE PREVIEW */}
+        {/* LIGHTBOX MODAL FOR CERTIFICATE PREVIEW (PDF & Image Compatible) */}
         {viewingCertImage && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs cursor-pointer"
             onClick={() => setViewingCertImage(null)}
           >
             <div
-              className="bg-white p-2 rounded-lg max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl relative cursor-default"
+              className="bg-white rounded-lg max-w-4xl w-full max-h-[92vh] overflow-hidden shadow-2xl relative cursor-default flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              <button
-                onClick={() => setViewingCertImage(null)}
-                className="absolute top-3 right-3 bg-black/60 hover:bg-black text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold z-10 cursor-pointer"
-              >
-                &times;
-              </button>
-              <img
-                src={viewingCertImage}
-                alt="Certificate Full View"
-                className="w-full max-h-[80vh] object-contain rounded"
-              />
+              {/* Header Bar */}
+              <div className="flex items-center justify-between px-4 py-3 bg-[#0c2340] text-white shrink-0">
+                <div className="flex items-center space-x-2">
+                  {viewingCertImage.startsWith('data:application/pdf') || viewingCertImage.toLowerCase().endsWith('.pdf') ? (
+                    <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">PDF</span>
+                  ) : (
+                    <span className="bg-amber-500 text-slate-900 text-[10px] font-bold px-2 py-0.5 rounded">IMAGE</span>
+                  )}
+                  <span className="font-semibold text-xs sm:text-sm">
+                    Administrative Certificate Audit &amp; Verification
+                  </span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <a
+                    href={viewingCertImage}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded transition-colors"
+                  >
+                    ↗ Open in New Window
+                  </a>
+                  <button
+                    onClick={() => setViewingCertImage(null)}
+                    className="text-white hover:text-red-300 text-lg font-bold cursor-pointer"
+                  >
+                    &times;
+                  </button>
+                </div>
+              </div>
+
+              {/* Viewer Body */}
+              <div className="p-2 flex-1 flex items-center justify-center bg-stone-100 overflow-auto">
+                {viewingCertImage.startsWith('data:application/pdf') || viewingCertImage.toLowerCase().endsWith('.pdf') ? (
+                  <iframe
+                    src={viewingCertImage}
+                    title="Certificate Full View"
+                    className="w-full h-[75vh] border-0 rounded bg-white"
+                  />
+                ) : (
+                  <img
+                    src={viewingCertImage}
+                    alt="Certificate Full View"
+                    className="max-h-[80vh] w-auto object-contain rounded"
+                  />
+                )}
+              </div>
             </div>
           </div>
         )}

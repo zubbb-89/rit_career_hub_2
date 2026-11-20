@@ -9,8 +9,12 @@ interface AchievementItem {
   issuingOrganization: string;
   date: string;
   fileUrl?: string;
+  fileType?: 'pdf' | 'image';
+  fileName?: string;
   verificationStatus: string;
   verificationRef?: string;
+  approvedBy?: string;
+  approvalDate?: string;
 }
 
 interface PortfolioData {
@@ -93,6 +97,10 @@ export const PortfolioPage: React.FC = () => {
   const [modalDescription, setModalDescription] = useState('Awarded for innovative AI agricultural monitoring system.');
   const [selectedMock, setSelectedMock] = useState<'hackathon' | 'cloud' | 'research' | 'custom'>('hackathon');
   const [customFileUrl, setCustomFileUrl] = useState<string>(MOCK_CERTIFICATES.hackathon);
+  const [uploadedFileName, setUploadedFileName] = useState<string>('');
+  const [uploadedFileSize, setUploadedFileSize] = useState<string>('');
+  const [isPdf, setIsPdf] = useState<boolean>(false);
+  const [uploadSource, setUploadSource] = useState<'upload' | 'mock'>('upload');
   const [uploading, setUploading] = useState(false);
   const [submitNotice, setSubmitNotice] = useState<string | null>(null);
 
@@ -140,8 +148,23 @@ export const PortfolioPage: React.FC = () => {
 
     fetchPortfolio();
 
+    // Auto-sync when certificates are updated (storage event or custom event)
+    const handleSync = () => {
+      fetchPortfolio();
+    };
+
+    window.addEventListener('rit_certificate_uploaded', handleSync);
+    window.addEventListener('storage', handleSync);
+
+    const interval = setInterval(() => {
+      fetchPortfolio();
+    }, 5000);
+
     return () => {
       isMounted = false;
+      window.removeEventListener('rit_certificate_uploaded', handleSync);
+      window.removeEventListener('storage', handleSync);
+      clearInterval(interval);
     };
   }, [username]);
 
@@ -151,15 +174,25 @@ export const PortfolioPage: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Handle Local File Upload (with base64 conversion & Cloudinary fallback)
+  // Handle Local File Upload (with base64 conversion & PDF detection)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size exceeds 10MB. Please choose a smaller document or picture.');
+        return;
+      }
+      const isPdfFile = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      setIsPdf(isPdfFile);
+      setUploadedFileName(file.name);
+      setUploadedFileSize((file.size / 1024).toFixed(1) + ' KB');
+      setSelectedMock('custom');
+      setUploadSource('upload');
+
       const reader = new FileReader();
       reader.onloadend = () => {
         if (typeof reader.result === 'string') {
           setCustomFileUrl(reader.result);
-          setSelectedMock('custom');
         }
       };
       reader.readAsDataURL(file);
@@ -172,13 +205,21 @@ export const PortfolioPage: React.FC = () => {
     setUploading(true);
     setSubmitNotice(null);
 
+    const finalFileUrl = customFileUrl || MOCK_CERTIFICATES.hackathon;
+    const finalIsPdf = isPdf || finalFileUrl.startsWith('data:application/pdf') || finalFileUrl.toLowerCase().endsWith('.pdf');
+    const finalFileName = uploadedFileName || (finalIsPdf ? `${modalTitle.replace(/\s+/g, '_')}.pdf` : `${modalTitle.replace(/\s+/g, '_')}.png`);
+
     const certificatePayload = {
       title: modalTitle,
       category: modalCategory,
       issuingOrganization: modalIssuer,
       date: modalDate,
       description: modalDescription,
-      fileUrl: customFileUrl || MOCK_CERTIFICATES.hackathon,
+      fileUrl: finalFileUrl,
+      fileType: (finalIsPdf ? 'pdf' : 'image') as 'pdf' | 'image',
+      fileName: finalFileName,
+      studentName: data.profile.fullName || 'Yashawantha H M',
+      usn: data.profile.usn || '4RA22CS001',
     };
 
     try {
@@ -205,11 +246,19 @@ export const PortfolioPage: React.FC = () => {
         achievements: [newAch, ...prev.achievements],
       }));
 
+      // Broadcast across tabs so Admin immediately sees the entry
+      try {
+        localStorage.setItem('rit_cert_updated', Date.now().toString());
+        window.dispatchEvent(new CustomEvent('rit_certificate_uploaded', { detail: newAch }));
+      } catch (be) {
+        console.debug('Storage sync notice', be);
+      }
+
       setSubmitNotice('✓ Certificate submitted! It is now queued in the Admin Ledger for institutional audit.');
       setTimeout(() => {
         setIsModalOpen(false);
         setSubmitNotice(null);
-      }, 2000);
+      }, 1800);
     } catch (err: any) {
       // Local optimistic fallback
       const fallbackAch: AchievementItem = {
@@ -221,11 +270,19 @@ export const PortfolioPage: React.FC = () => {
         ...prev,
         achievements: [fallbackAch, ...prev.achievements],
       }));
+
+      try {
+        localStorage.setItem('rit_cert_updated', Date.now().toString());
+        window.dispatchEvent(new CustomEvent('rit_certificate_uploaded', { detail: fallbackAch }));
+      } catch (be) {
+        console.debug('Storage sync notice', be);
+      }
+
       setSubmitNotice('✓ Certificate queued locally for Admin verification.');
       setTimeout(() => {
         setIsModalOpen(false);
         setSubmitNotice(null);
-      }, 2000);
+      }, 1800);
     } finally {
       setUploading(false);
     }
@@ -351,23 +408,49 @@ export const PortfolioPage: React.FC = () => {
                     </p>
                   </div>
 
-                  {/* Certificate Picture Thumbnail with Click-to-Preview */}
+                  {/* Certificate Picture / PDF Thumbnail with Click-to-Preview */}
                   {ach.fileUrl && (
-                    <div className="shrink-0">
-                      <div
-                        onClick={() => setViewingCertificate(ach.fileUrl || null)}
-                        className="w-32 h-24 bg-stone-50 border-2 border-stone-200 rounded p-1 shadow-xs cursor-pointer hover:border-amber-400 transition-colors group relative"
-                        title="Click to view full certificate"
-                      >
-                        <img
-                          src={ach.fileUrl}
-                          alt={ach.title}
-                          className="w-full h-full object-cover rounded-xs"
-                        />
-                        <div className="absolute inset-0 bg-[#0c2340]/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xs flex items-center justify-center text-white text-[11px] font-medium">
-                          🔍 View
+                    <div className="shrink-0 flex flex-col items-center">
+                      {ach.fileType === 'pdf' || ach.fileUrl.startsWith('data:application/pdf') || ach.fileUrl.toLowerCase().endsWith('.pdf') ? (
+                        <div
+                          onClick={() => setViewingCertificate(ach.fileUrl || null)}
+                          className="w-32 h-24 bg-red-50 border-2 border-red-200 rounded p-1.5 shadow-xs cursor-pointer hover:border-red-400 transition-colors group relative flex flex-col items-center justify-center text-center"
+                          title="Click to view full PDF document"
+                        >
+                          <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-2xs">
+                            PDF DOC
+                          </span>
+                          <span className="text-[10px] text-red-800 font-semibold truncate max-w-[100px] mt-1">
+                            {ach.fileName || 'Certificate.pdf'}
+                          </span>
+                          <span className="text-[9px] text-red-500 font-mono mt-0.5">Click to Inspect</span>
+                          <div className="absolute inset-0 bg-[#0c2340]/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xs flex items-center justify-center text-white text-[11px] font-medium">
+                            📄 View PDF
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div
+                          onClick={() => setViewingCertificate(ach.fileUrl || null)}
+                          className="w-32 h-24 bg-stone-50 border-2 border-stone-200 rounded p-1 shadow-xs cursor-pointer hover:border-amber-400 transition-colors group relative"
+                          title="Click to view full certificate"
+                        >
+                          <img
+                            src={ach.fileUrl}
+                            alt={ach.title}
+                            className="w-full h-full object-cover rounded-xs"
+                          />
+                          <div className="absolute inset-0 bg-[#0c2340]/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xs flex items-center justify-center text-white text-[11px] font-medium">
+                            🔍 View
+                          </div>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setViewingCertificate(ach.fileUrl || null)}
+                        className="mt-1 text-[10px] text-[#0c2340] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                      >
+                        📄 {ach.fileType === 'pdf' || ach.fileUrl.startsWith('data:application/pdf') || ach.fileUrl.toLowerCase().endsWith('.pdf') ? 'Inspect PDF' : 'Inspect Picture'}
+                      </button>
                     </div>
                   )}
                 </div>
@@ -384,9 +467,13 @@ export const PortfolioPage: React.FC = () => {
                         <span className="text-amber-800 font-mono ml-1">({ach.verificationRef})</span>
                       )}
                     </div>
+                  ) : ach.verificationStatus === 'rejected' ? (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-rose-50 border border-rose-300 text-rose-800 text-xs font-bold">
+                      <span>✕ REJECTED BY ADMIN</span>
+                    </div>
                   ) : (
                     <span className="text-amber-700 italic font-sans text-xs">
-                      Under review by Department Auditor
+                      ⏳ Under review by Department Auditor
                     </span>
                   )}
                 </div>
@@ -398,19 +485,19 @@ export const PortfolioPage: React.FC = () => {
         {/* MODAL 1: STUDENT UPLOAD CERTIFICATE */}
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-            <div className="bg-white w-full max-w-xl rounded-lg border border-stone-200 p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="bg-white w-full max-w-xl rounded-lg border border-stone-200 p-6 shadow-xl max-h-[92vh] overflow-y-auto">
               <div className="flex items-center justify-between pb-4 border-b border-stone-200">
                 <div>
                   <h3 className="font-serif font-bold text-lg text-[#0c2340]">
                     Upload Certificate for Institutional Audit
                   </h3>
                   <p className="text-xs text-stone-500">
-                    Submit real or mock certificate picture to be approved by RIT CareerHub Admin.
+                    Upload your certificate as PDF or Picture, or pick a verified mock template.
                   </p>
                 </div>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="text-stone-400 hover:text-stone-700 font-bold text-xl px-2"
+                  className="text-stone-400 hover:text-stone-700 font-bold text-xl px-2 cursor-pointer"
                 >
                   &times;
                 </button>
@@ -485,79 +572,154 @@ export const PortfolioPage: React.FC = () => {
                   />
                 </div>
 
-                {/* Certificate Picture Selection: Mock Presets OR Real Upload */}
+                {/* Certificate File Selection: PDF Upload OR Mock Presets */}
                 <div className="pt-2 border-t border-stone-100">
-                  <label className="block text-xs font-bold text-[#0c2340] uppercase tracking-wide mb-2">
-                    Certificate Picture (Choose Mock Preset or Upload File)
-                  </label>
-                  
-                  <div className="grid grid-cols-3 gap-2 mb-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedMock('hackathon');
-                        setCustomFileUrl(MOCK_CERTIFICATES.hackathon);
-                      }}
-                      className={`p-2 border rounded text-xs text-center transition-colors ${
-                        selectedMock === 'hackathon'
-                          ? 'border-amber-600 bg-amber-50 text-amber-900 font-bold'
-                          : 'border-stone-200 bg-stone-50 text-stone-700'
-                      }`}
-                    >
-                      🏆 Hackathon Winner
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedMock('cloud');
-                        setCustomFileUrl(MOCK_CERTIFICATES.cloud);
-                      }}
-                      className={`p-2 border rounded text-xs text-center transition-colors ${
-                        selectedMock === 'cloud'
-                          ? 'border-amber-600 bg-amber-50 text-amber-900 font-bold'
-                          : 'border-stone-200 bg-stone-50 text-stone-700'
-                      }`}
-                    >
-                      ☁️ Google Cloud
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedMock('research');
-                        setCustomFileUrl(MOCK_CERTIFICATES.research);
-                      }}
-                      className={`p-2 border rounded text-xs text-center transition-colors ${
-                        selectedMock === 'research'
-                          ? 'border-amber-600 bg-amber-50 text-amber-900 font-bold'
-                          : 'border-stone-200 bg-stone-50 text-stone-700'
-                      }`}
-                    >
-                      📜 VTU Research Paper
-                    </button>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-xs font-bold text-[#0c2340] uppercase tracking-wide">
+                      Certificate Document (PDF or Image)
+                    </label>
+                    <div className="flex gap-1 text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => setUploadSource('upload')}
+                        className={`px-2.5 py-1 rounded font-medium cursor-pointer ${
+                          uploadSource === 'upload'
+                            ? 'bg-[#0c2340] text-white'
+                            : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                        }`}
+                      >
+                        📄 Upload PDF / Image
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setUploadSource('mock')}
+                        className={`px-2.5 py-1 rounded font-medium cursor-pointer ${
+                          uploadSource === 'mock'
+                            ? 'bg-[#0c2340] text-white'
+                            : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                        }`}
+                      >
+                        🏅 Mock Presets
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="mb-3">
-                    <div className="text-[11px] text-stone-500 mb-1">Or upload real image from PC:</div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileUpload}
-                      className="text-xs text-stone-600 file:mr-2 file:py-1 file:px-3 file:rounded file:border file:border-stone-300 file:text-xs file:bg-stone-100 file:font-medium hover:file:bg-stone-200 cursor-pointer"
-                    />
-                  </div>
+                  {uploadSource === 'upload' ? (
+                    <div className="space-y-2 mb-3">
+                      <div className="p-4 border-2 border-dashed border-stone-300 hover:border-[#0c2340] rounded-lg bg-stone-50 text-center transition-colors">
+                        <div className="text-3xl mb-1">📄</div>
+                        <div className="text-xs font-bold text-stone-800">
+                          Upload Certificate (PDF Document or Image)
+                        </div>
+                        <div className="text-[11px] text-stone-500 mb-2">
+                          Accepted: PDF documents, PNG, JPG, JPEG (Up to 10MB)
+                        </div>
+                        <input
+                          type="file"
+                          accept="application/pdf,image/*,.pdf,.png,.jpg,.jpeg"
+                          onChange={handleFileUpload}
+                          className="w-full text-xs text-stone-600 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border file:border-stone-300 file:text-xs file:bg-white file:font-semibold hover:file:bg-stone-100 cursor-pointer"
+                        />
+                      </div>
+                      {uploadedFileName && (
+                        <div className="flex items-center justify-between p-2 bg-emerald-50 border border-emerald-200 rounded text-xs text-emerald-900">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className="font-bold">{isPdf ? '📄 PDF File:' : '🖼 Picture:'}</span>
+                            <span className="truncate">{uploadedFileName}</span>
+                          </div>
+                          <span className="font-mono text-[10px] text-emerald-700 shrink-0">{uploadedFileSize}</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2 mb-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMock('hackathon');
+                          setIsPdf(false);
+                          setUploadedFileName('Hackathon_Winner_Certificate.svg');
+                          setCustomFileUrl(MOCK_CERTIFICATES.hackathon);
+                        }}
+                        className={`p-2 border rounded text-xs text-center transition-colors cursor-pointer ${
+                          selectedMock === 'hackathon'
+                            ? 'border-amber-600 bg-amber-50 text-amber-900 font-bold'
+                            : 'border-stone-200 bg-stone-50 text-stone-700'
+                        }`}
+                      >
+                        🏆 Hackathon Winner
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMock('cloud');
+                          setIsPdf(false);
+                          setUploadedFileName('Google_Cloud_Specialist.svg');
+                          setCustomFileUrl(MOCK_CERTIFICATES.cloud);
+                        }}
+                        className={`p-2 border rounded text-xs text-center transition-colors cursor-pointer ${
+                          selectedMock === 'cloud'
+                            ? 'border-amber-600 bg-amber-50 text-amber-900 font-bold'
+                            : 'border-stone-200 bg-stone-50 text-stone-700'
+                        }`}
+                      >
+                        ☁️ Google Cloud
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedMock('research');
+                          setIsPdf(false);
+                          setUploadedFileName('VTU_Research_Paper.svg');
+                          setCustomFileUrl(MOCK_CERTIFICATES.research);
+                        }}
+                        className={`p-2 border rounded text-xs text-center transition-colors cursor-pointer ${
+                          selectedMock === 'research'
+                            ? 'border-amber-600 bg-amber-50 text-amber-900 font-bold'
+                            : 'border-stone-200 bg-stone-50 text-stone-700'
+                        }`}
+                      >
+                        📜 VTU Paper
+                      </button>
+                    </div>
+                  )}
 
                   {/* Certificate Live Preview Box */}
                   <div className="border border-stone-200 rounded p-2 bg-stone-50 text-center">
-                    <div className="text-[10px] text-stone-500 uppercase font-semibold mb-1">
-                      Certificate Preview
+                    <div className="text-[10px] text-stone-500 uppercase font-semibold mb-1 flex items-center justify-center gap-1">
+                      {isPdf || customFileUrl.startsWith('data:application/pdf') || customFileUrl.toLowerCase().endsWith('.pdf') ? (
+                        <span className="text-red-700 font-bold">📄 PDF Document Preview</span>
+                      ) : (
+                        <span>Certificate Visual Preview</span>
+                      )}
                     </div>
-                    <div className="max-h-48 overflow-hidden rounded border border-amber-300 shadow-inner flex items-center justify-center bg-white">
-                      <img
-                        src={customFileUrl}
-                        alt="Preview Certificate"
-                        className="max-h-44 object-contain"
-                      />
-                    </div>
+                    {isPdf || customFileUrl.startsWith('data:application/pdf') || customFileUrl.toLowerCase().endsWith('.pdf') ? (
+                      <div className="rounded border border-red-200 bg-white p-2 flex flex-col items-center">
+                        <div className="w-full h-44 overflow-hidden rounded border border-stone-200">
+                          <iframe
+                            src={customFileUrl}
+                            title="PDF Preview"
+                            className="w-full h-full border-0 pointer-events-none"
+                          />
+                        </div>
+                        <a
+                          href={customFileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-1 text-[11px] text-[#0c2340] hover:underline font-semibold"
+                        >
+                          ↗ Open uploaded PDF in new tab
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="max-h-48 overflow-hidden rounded border border-amber-300 shadow-inner flex items-center justify-center bg-white">
+                        <img
+                          src={customFileUrl}
+                          alt="Preview Certificate"
+                          className="max-h-44 object-contain"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -565,7 +727,7 @@ export const PortfolioPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 border border-stone-300 rounded text-xs font-medium text-stone-700 hover:bg-stone-50"
+                    className="px-4 py-2 border border-stone-300 rounded text-xs font-medium text-stone-700 hover:bg-stone-50 cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -582,27 +744,62 @@ export const PortfolioPage: React.FC = () => {
           </div>
         )}
 
-        {/* MODAL 2: FULL-SIZE LIGHTBOX VIEW */}
+        {/* MODAL 2: FULL-SIZE LIGHTBOX VIEW (PDF & Image Compatible) */}
         {viewingCertificate && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs cursor-pointer"
             onClick={() => setViewingCertificate(null)}
           >
             <div
-              className="bg-white p-2 rounded-lg max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl relative cursor-default"
+              className="bg-white rounded-lg max-w-4xl w-full max-h-[92vh] overflow-hidden shadow-2xl relative cursor-default flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              <button
-                onClick={() => setViewingCertificate(null)}
-                className="absolute top-3 right-3 bg-black/60 hover:bg-black text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold z-10"
-              >
-                &times;
-              </button>
-              <img
-                src={viewingCertificate}
-                alt="Certificate Full View"
-                className="w-full max-h-[80vh] object-contain rounded"
-              />
+              {/* Header Bar */}
+              <div className="flex items-center justify-between px-4 py-3 bg-[#0c2340] text-white shrink-0">
+                <div className="flex items-center space-x-2">
+                  {viewingCertificate.startsWith('data:application/pdf') || viewingCertificate.toLowerCase().endsWith('.pdf') ? (
+                    <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">PDF</span>
+                  ) : (
+                    <span className="bg-amber-500 text-slate-900 text-[10px] font-bold px-2 py-0.5 rounded">IMAGE</span>
+                  )}
+                  <span className="font-semibold text-xs sm:text-sm">
+                    Institutional Certificate Document Audit
+                  </span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <a
+                    href={viewingCertificate}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded transition-colors"
+                  >
+                    ↗ Open in New Window
+                  </a>
+                  <button
+                    onClick={() => setViewingCertificate(null)}
+                    className="text-white hover:text-red-300 text-lg font-bold cursor-pointer"
+                  >
+                    &times;
+                  </button>
+                </div>
+              </div>
+
+              {/* Viewer Body */}
+              <div className="p-2 flex-1 flex items-center justify-center bg-stone-100 overflow-auto">
+                {viewingCertificate.startsWith('data:application/pdf') || viewingCertificate.toLowerCase().endsWith('.pdf') ? (
+                  <iframe
+                    src={viewingCertificate}
+                    title="Certificate Full View"
+                    className="w-full h-[75vh] border-0 rounded bg-white"
+                  />
+                ) : (
+                  <img
+                    src={viewingCertificate}
+                    alt="Certificate Full View"
+                    className="max-h-[80vh] w-auto object-contain rounded"
+                  />
+                )}
+              </div>
             </div>
           </div>
         )}
